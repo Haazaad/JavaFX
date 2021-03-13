@@ -47,6 +47,14 @@ public class Server {
         countAllMessage++;
     }
 
+    public void sendPrivateMessage(String username, String message) throws IOException {
+        for (ClientHandler client: clients) {
+            if (client.getUsername().equals(username)) {
+                client.sendMessage(message);
+            }
+        }
+    }
+
     public boolean isNickBusy(String username) {
         for (ClientHandler clientHandler: clients) {
             if (clientHandler.getUsername().equals(username)) {

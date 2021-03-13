@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ClientHandler {
     private Server server;
@@ -49,11 +51,26 @@ public class ClientHandler {
                                 disconnect();
                                 continue;
                             case "/stat":
-                                sendMessage("Количество сообщений - " + server.getCountAllMessage());
+                                sendMessage("Общее количество сообщений - " + server.getCountAllMessage());
+                                continue;
+                            case "/who_am_i":
+                                sendMessage(username);
                                 continue;
                         }
                     }
-                    server.broadcastMessage(username + ":" + msg);
+                    if (msg.startsWith("/w ")) {
+                        String sendTo = msg.split("\\s", 3)[1];
+                        if (!server.isNickBusy(sendTo)) {
+                            String message = "/w_fail Невозможно отправить сообщение пользователю " + sendTo + " пользователь не в сети";
+                            sendMessage(message);
+                            continue;
+                        }
+                        String message = getCurrentTime() + " " + username + ": " + msg.split("\\s", 3)[2];
+                        server.sendPrivateMessage(username, message);
+                        server.sendPrivateMessage(sendTo, message);
+                        continue;
+                    }
+                    server.broadcastMessage(getCurrentTime() + " " + username + ": " + msg);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -66,6 +83,12 @@ public class ClientHandler {
 
     public void sendMessage(String message) throws IOException{
         out.writeUTF(message);
+    }
+
+    public String getCurrentTime() {
+        Date date = new Date();
+        SimpleDateFormat formatDate = new SimpleDateFormat("hh:mm:ss");
+        return formatDate.format(date);
     }
 
     public void disconnect() {
