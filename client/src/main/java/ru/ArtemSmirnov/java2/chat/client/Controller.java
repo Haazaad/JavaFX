@@ -70,7 +70,7 @@ public class Controller {
                     while (true) {
                         String msg = in.readUTF();
                         if (msg.startsWith("/login_ok ")) {
-                            setUsername(msg.split("\\s",2)[1]);
+                            setUsername(msg.split("\\s", 2)[1]);
                             break;
                         }
                         if (msg.startsWith("/login_failed ")) {
@@ -81,9 +81,15 @@ public class Controller {
                     // цикл общения
                     while (true) {
                         String msg = in.readUTF();
+                        if (msg.startsWith("/w_fail ")) {
+                            String cause = msg.split("\\s", 2)[1];
+                            msgArea.appendText(cause);
+                            continue;
+                        }
                         switch (msg) {
                             case "/exit":
                                 disconnect();
+                                break;
                         }
                         msgArea.appendText(msg + "\n");
                     }
@@ -114,6 +120,7 @@ public class Controller {
     }
 
     private void disconnect() {
+        msgArea.clear();
         setUsername(null);
         try {
             if (socket != null) {

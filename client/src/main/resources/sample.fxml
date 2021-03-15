@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.control.TextField?>
-
-<VBox alignment="center" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
+<VBox alignment="center" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/11.0.2"
+      fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
     <HBox fx:id="loginPanel">
-        <TextField fx:id="usernameField" promptText="Укажите свой ник" HBox.hgrow="ALWAYS" onAction="#login"/>
+        <TextField fx:id="usernameField" onAction="#login" promptText="Укажите свой ник" HBox.hgrow="ALWAYS" />
         <Button onAction="#login" text="Войти" />
     </HBox>
     <TextArea fx:id="msgArea" editable="false" VBox.vgrow="ALWAYS" />
