@@ -48,7 +48,6 @@ public class ClientHandler {
                     if (msg.startsWith("/")) {
                         switch (msg) {
                             case "/exit":
-                                disconnect();
                                 continue;
                             case "/stat":
                                 sendMessage("Общее количество сообщений - " + server.getCountAllMessage());
@@ -60,14 +59,8 @@ public class ClientHandler {
                     }
                     if (msg.startsWith("/w ")) {
                         String sendTo = msg.split("\\s", 3)[1];
-                        if (!server.isNickBusy(sendTo)) {
-                            String message = "/w_fail Невозможно отправить сообщение пользователю " + sendTo + " пользователь не в сети";
-                            sendMessage(message);
-                            continue;
-                        }
-                        String message = getCurrentTime() + " " + username + ": " + msg.split("\\s", 3)[2];
-                        server.sendPrivateMessage(username, message);
-                        server.sendPrivateMessage(sendTo, message);
+                        String message = getCurrentTime() + " from: " + username + ": " + msg.split("\\s", 3)[2];
+                        server.sendPrivateMessage(this, sendTo, message);
                         continue;
                     }
                     server.broadcastMessage(getCurrentTime() + " " + username + ": " + msg);

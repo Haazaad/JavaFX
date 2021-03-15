@@ -1,1 +1,2 @@
-#JavaFX Applications
+#Simple chat on JavaFX
+

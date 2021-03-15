@@ -47,12 +47,17 @@ public class Server {
         countAllMessage++;
     }
 
-    public void sendPrivateMessage(String username, String message) throws IOException {
-        for (ClientHandler client: clients) {
-            if (client.getUsername().equals(username)) {
-                client.sendMessage(message);
+    public void sendPrivateMessage(ClientHandler fromUser, String sendToUser, String message) throws IOException {
+        if (!isNickBusy(sendToUser)) {
+            message = "/w_fail Невозможно отправить сообщение пользователю " + sendToUser + " - пользователь не в сети";
+        } else {
+            for (ClientHandler client : clients) {
+                if (client.getUsername().equals(sendToUser)) {
+                    client.sendMessage(message);
+                }
             }
         }
+        fromUser.sendMessage(message);
     }
 
     public boolean isNickBusy(String username) {
