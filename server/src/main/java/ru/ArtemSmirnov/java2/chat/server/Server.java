@@ -7,26 +7,28 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class Server {
     private int port;
     private List<ClientHandler> clients;
+    private Users users;
 
     private long countAllMessage;
 
-    public long getCountAllMessage() {
+    public synchronized long getCountAllMessage() {
         return countAllMessage;
     }
 
     public Server(int port) {
         this.port = port;
         this.clients = new ArrayList<>();
+        users = new Users();
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен на порту " + port);
             while (true) {
                 System.out.println("Ждем нового клиента...");
                 Socket socket = serverSocket.accept();
-                System.out.println("Клиент подключился");
                 new ClientHandler(this, socket);
             }
         } catch (IOException e) {
@@ -36,11 +38,15 @@ public class Server {
 
     public synchronized void subscribe(ClientHandler clientHandler){
         clients.add(clientHandler);
+        System.out.println("Клиент подключился");
+        broadcastMessage("Пользователь " + clientHandler.getUsername() + " присоединился к чату.");
         broadcastClientList();
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
+        broadcastMessage("Пользователь " + clientHandler.getUsername() + " покинул чат.");
         clients.remove(clientHandler);
+        System.out.println("Клиент отключился");
         broadcastClientList();
     }
 
@@ -56,6 +62,8 @@ public class Server {
             if (client.getUsername().equals(sendToUser)) {
                 client.sendMessage(getCurrentTime() + " От: " + fromUser.getUsername() + " Сообщение: " + message);
                 fromUser.sendMessage(getCurrentTime() + " Пользователю: " + sendToUser + " Сообщение: " + message);
+                client.riseMessageCount();
+                fromUser.riseMessageCount();
                 return;
             }
         }
@@ -69,6 +77,31 @@ public class Server {
             }
         }
         return false;
+    }
+
+    /**
+     * Метод валидации введенной пары логин/пароль
+     * @param clientHandler - поток обработчик
+     * @param login - логин пользователя
+     * @param password - введенный пароль пользователя
+     */
+    public void validateUser(ClientHandler clientHandler, String login, String password) {
+        if (users.havingUser(login)) {
+            String username = users.returnUsername(login, password);
+            if (username != null) {
+                if (!isUserOnline(username)) {
+                    clientHandler.setUsername(username);
+                    subscribe(clientHandler);
+                    clientHandler.sendMessage("/login_ok " + username);
+                    return;
+                }
+                clientHandler.sendMessage("/login_failed Текущий никнейм занят");
+                return;
+            }
+            clientHandler.sendMessage("/login_failed Введен некорректный пароль");
+            return;
+        }
+        clientHandler.sendMessage("/login_failed Ошибка авторизации - введена не корректная пара логин/пароль");
     }
 
     public String getCurrentTime() {
