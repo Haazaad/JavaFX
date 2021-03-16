@@ -85,7 +85,7 @@ public class Server {
      * @param login - логин пользователя
      * @param password - введенный пароль пользователя
      */
-    public void validateUser(ClientHandler clientHandler, String login, String password) {
+    public synchronized void validateUser(ClientHandler clientHandler, String login, String password) {
         if (users.havingUser(login)) {
             String username = users.returnUsername(login, password);
             if (username != null) {
