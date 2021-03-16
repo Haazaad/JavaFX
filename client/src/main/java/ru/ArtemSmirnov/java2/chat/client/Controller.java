@@ -1,18 +1,19 @@
 package ru.ArtemSmirnov.java2.chat.client;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URL;
+import java.util.ResourceBundle;
 
-public class Controller {
+public class Controller implements Initializable {
     @FXML
     TextField msgField, usernameField;
 
@@ -21,6 +22,9 @@ public class Controller {
 
     @FXML
     HBox loginPanel, msgPanel;
+
+    @FXML
+    ListView<String> clientsList;
 
     private Socket socket;
     private DataInputStream in;
@@ -40,6 +44,11 @@ public class Controller {
             msgPanel.setVisible(false);
             msgPanel.setManaged(false);
         }
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        setUsername(null);
     }
 
     public void login() {
@@ -75,21 +84,18 @@ public class Controller {
                         }
                         if (msg.startsWith("/login_failed ")) {
                             String cause = msg.split("\\s", 2)[1];
-                            msgArea.appendText(cause + "\n");
+                            Platform.runLater(() -> {
+                                Alert alert = new Alert(Alert.AlertType.ERROR, cause, ButtonType.OK);
+                                alert.showAndWait();
+                            });
                         }
                     }
                     // цикл общения
                     while (true) {
                         String msg = in.readUTF();
-                        if (msg.startsWith("/w_fail ")) {
-                            String cause = msg.split("\\s", 2)[1];
-                            msgArea.appendText(cause);
+                        if (msg.startsWith("/")) {
+                            executeCommand(msg);
                             continue;
-                        }
-                        switch (msg) {
-                            case "/exit":
-                                disconnect();
-                                break;
                         }
                         msgArea.appendText(msg + "\n");
                     }
@@ -107,7 +113,32 @@ public class Controller {
         }
     }
 
-    public void sndMsg() {
+    public void executeCommand(String msg) {
+        String cmd = msg.split("\\s")[0];
+        switch (cmd) {
+            case "/w_failed":
+                String cause = msg.split("\\s", 2)[1];
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, cause, ButtonType.OK);
+                    alert.showAndWait();
+                });
+                return;
+            case "/clients_list":
+                String[] tokens = msg.split("\\s");
+                Platform.runLater(() -> {
+                    System.out.println(Thread.currentThread().getName());
+                    clientsList.getItems().clear();
+                    for (int i = 1; i < tokens.length; i++) {
+                        clientsList.getItems().add(tokens[i]);
+                    }
+                });
+                return;
+            case "/exit":
+                return;
+        }
+    }
+
+    public void sendMessage() {
         try {
             out.writeUTF(msgField.getText());
             msgField.clear();
@@ -121,6 +152,7 @@ public class Controller {
 
     private void disconnect() {
         msgArea.clear();
+        Platform.runLater(() -> clientsList.getItems().clear());
         setUsername(null);
         try {
             if (socket != null) {

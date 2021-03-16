@@ -3,15 +3,17 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="center" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/11.0.2"
-      fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
+<VBox alignment="center" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
     <HBox fx:id="loginPanel">
         <TextField fx:id="usernameField" onAction="#login" promptText="Укажите свой ник" HBox.hgrow="ALWAYS" />
         <Button onAction="#login" text="Войти" />
     </HBox>
-    <TextArea fx:id="msgArea" editable="false" VBox.vgrow="ALWAYS" />
-    <HBox fx:id="msgPanel" managed="false" visible="false">
-        <TextField fx:id="msgField" onAction="#sndMsg" promptText="Введите сообщение" HBox.hgrow="ALWAYS" />
-        <Button onAction="#sndMsg" text="Send" />
+    <HBox VBox.vgrow="ALWAYS">
+        <TextArea fx:id="msgArea" editable="false" wrapText="true" HBox.hgrow="ALWAYS" />
+        <ListView fx:id="clientsList" maxWidth="150" minWidth="150" prefWidth="150" />
+    </HBox>
+    <HBox fx:id="msgPanel">
+        <TextField fx:id="msgField" onAction="#sendMessage" promptText="Введите сообщение" HBox.hgrow="ALWAYS" />
+        <Button onAction="#sendMessage" text="Send" />
     </HBox>
 </VBox>

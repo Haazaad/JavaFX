@@ -4,8 +4,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class ClientHandler {
     private Server server;
@@ -31,7 +29,7 @@ public class ClientHandler {
                     String msg = in.readUTF();
                     if (msg.startsWith("/login ")) {
                         String usernameFromLogin = msg.split("\\s")[1];
-                        if (server.isNickBusy(usernameFromLogin)) {
+                        if (server.isUserOnline(usernameFromLogin)) {
                             sendMessage("/login_failed Текущий никнейм занят");
                             continue;
                         }
@@ -46,42 +44,44 @@ public class ClientHandler {
                     String msg = in.readUTF();
                     System.out.println(msg);
                     if (msg.startsWith("/")) {
-                        switch (msg) {
-                            case "/exit":
-                                continue;
-                            case "/stat":
-                                sendMessage("Общее количество сообщений - " + server.getCountAllMessage());
-                                continue;
-                            case "/who_am_i":
-                                sendMessage(username);
-                                continue;
-                        }
-                    }
-                    if (msg.startsWith("/w ")) {
-                        String sendTo = msg.split("\\s", 3)[1];
-                        String message = getCurrentTime() + " from: " + username + ": " + msg.split("\\s", 3)[2];
-                        server.sendPrivateMessage(this, sendTo, message);
+                        String[] tokens = msg.split("\\s");
+                        executeCommand(tokens);
                         continue;
                     }
-                    server.broadcastMessage(getCurrentTime() + " " + username + ": " + msg);
+                    server.broadcastMessage(username + ": " + msg);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-               disconnect();
+                disconnect();
             }
         }).start();
 
     }
 
-    public void sendMessage(String message) throws IOException{
-        out.writeUTF(message);
+    private void executeCommand(String[] tokens){
+        switch (tokens[0]) {
+            case "/w":
+                server.sendPrivateMessage(this, tokens[1], tokens[2]);
+                return;
+            case "/exit":
+                disconnect();
+                return;
+            case "/stat":
+                sendMessage("Общее количество сообщений - " + server.getCountAllMessage());
+                return;
+            case "/who_am_i":
+                sendMessage("Текущий ник " + username);
+                return;
+        }
     }
 
-    public String getCurrentTime() {
-        Date date = new Date();
-        SimpleDateFormat formatDate = new SimpleDateFormat("hh:mm:ss");
-        return formatDate.format(date);
+    public void sendMessage(String message) {
+        try {
+            out.writeUTF(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void disconnect() {
