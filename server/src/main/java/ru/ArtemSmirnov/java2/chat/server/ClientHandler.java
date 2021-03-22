@@ -11,9 +11,22 @@ public class ClientHandler {
     private DataInputStream in;
     private DataOutputStream out;
     private String username;
+    private long messageCount;
 
     public String getUsername() {
         return username;
+    }
+
+    public void riseMessageCount() {
+        messageCount++;
+    }
+
+    public long getMessageCount() {
+        return messageCount;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -21,31 +34,15 @@ public class ClientHandler {
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
+        messageCount = 0;
 
         new Thread(() -> {
             try {
-                // цикл авторизации
-                while (true) {
-                    String msg = in.readUTF();
-                    if (msg.startsWith("/login ")) {
-                        String usernameFromLogin = msg.split("\\s")[1];
-                        if (server.isUserOnline(usernameFromLogin)) {
-                            sendMessage("/login_failed Текущий никнейм занят");
-                            continue;
-                        }
-                        username = usernameFromLogin;
-                        sendMessage("/login_ok " + username);
-                        server.subscribe(this);
-                        break;
-                    }
-                }
-                // цикл общения
                 while (true) {
                     String msg = in.readUTF();
                     System.out.println(msg);
                     if (msg.startsWith("/")) {
-                        String[] tokens = msg.split("\\s");
-                        executeCommand(tokens);
+                        executeCommand(msg);
                         continue;
                     }
                     server.broadcastMessage(username + ": " + msg);
@@ -59,20 +56,36 @@ public class ClientHandler {
 
     }
 
-    private void executeCommand(String[] tokens){
+    /**
+     * Метод обработки всех служебных комманд, начинающихся с "/"
+     * @param message - введенное сообщение
+     */
+    private void executeCommand(String message){
+        String[] tokens = message.split("\\s");
         switch (tokens[0]) {
+            case "/login":
+                tokens = message.split("\\s", 3);
+                server.validateUser(this, tokens[1], tokens[2]);
+                return;
             case "/w":
+                tokens = message.split("\\s", 3);
                 server.sendPrivateMessage(this, tokens[1], tokens[2]);
                 return;
             case "/exit":
                 disconnect();
                 return;
             case "/stat":
-                sendMessage("Общее количество сообщений - " + server.getCountAllMessage());
+                sendMessage("Количество сообщений в чате - " + getMessageCount());
+                System.out.println("Общее количество сообщений " + server.getCountAllMessage());
                 return;
             case "/who_am_i":
                 sendMessage("Текущий ник " + username);
                 return;
+            case "/change_nick":
+                tokens = message.split("\\s", 2);
+                server.broadcastMessage("Пользователь " + username + " сменил никнейм на " + tokens[1]);
+                setUsername(tokens[1]);
+                server.broadcastClientList();
         }
     }
 

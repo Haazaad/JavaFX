@@ -4,7 +4,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -18,10 +18,13 @@ public class Controller implements Initializable {
     TextField msgField, usernameField;
 
     @FXML
+    PasswordField passwordField;
+
+    @FXML
     TextArea msgArea;
 
     @FXML
-    HBox loginPanel, msgPanel;
+    VBox loginPanel, msgPanel;
 
     @FXML
     ListView<String> clientsList;
@@ -55,16 +58,20 @@ public class Controller implements Initializable {
         if (socket == null || socket.isClosed()) {
             connect();
         }
-        if (usernameField.getText().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Имя пользователя не может быть пустым", ButtonType.OK);
+        if (usernameField.getText().isEmpty() || passwordField.getText().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Логин/пароль не могут быть пустыми", ButtonType.OK);
             alert.showAndWait();
             return;
         }
         try {
-            out.writeUTF("/login " + usernameField.getText());
+            out.writeUTF("/login " + usernameField.getText() + " " + passwordField.getText());
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void logout() {
+        disconnect();
     }
 
     public void connect() {
@@ -75,22 +82,6 @@ public class Controller implements Initializable {
 
             Thread t = new Thread(() -> {
                 try {
-                    //цикл авторизации
-                    while (true) {
-                        String msg = in.readUTF();
-                        if (msg.startsWith("/login_ok ")) {
-                            setUsername(msg.split("\\s", 2)[1]);
-                            break;
-                        }
-                        if (msg.startsWith("/login_failed ")) {
-                            String cause = msg.split("\\s", 2)[1];
-                            Platform.runLater(() -> {
-                                Alert alert = new Alert(Alert.AlertType.ERROR, cause, ButtonType.OK);
-                                alert.showAndWait();
-                            });
-                        }
-                    }
-                    // цикл общения
                     while (true) {
                         String msg = in.readUTF();
                         if (msg.startsWith("/")) {
@@ -113,13 +104,25 @@ public class Controller implements Initializable {
         }
     }
 
+    /**
+     * Метод обработки всех служебных комманд, начинающихся с "/"
+     * @param msg - введенное сообщение
+     */
     public void executeCommand(String msg) {
         String cmd = msg.split("\\s")[0];
         switch (cmd) {
-            case "/w_failed":
-                String cause = msg.split("\\s", 2)[1];
+            case "/login_ok":
+                setUsername(msg.split("\\s", 2)[1]);
+                return;
+            case "/login_failed":
                 Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, cause, ButtonType.OK);
+                    Alert alert = new Alert(Alert.AlertType.ERROR, msg.split("\\s", 2)[1], ButtonType.OK);
+                    alert.showAndWait();
+                });
+                return;
+            case "/w_failed":
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, msg.split("\\s", 2)[1], ButtonType.OK);
                     alert.showAndWait();
                 });
                 return;
@@ -150,7 +153,10 @@ public class Controller implements Initializable {
 
     }
 
+    // целесообразно ли делать метод public?
     private void disconnect() {
+        usernameField.clear();
+        passwordField.clear();
         msgArea.clear();
         Platform.runLater(() -> clientsList.getItems().clear());
         setUsername(null);

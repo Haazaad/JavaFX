@@ -1,19 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="center" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
-    <HBox fx:id="loginPanel">
-        <TextField fx:id="usernameField" onAction="#login" promptText="Укажите свой ник" HBox.hgrow="ALWAYS" />
-        <Button onAction="#login" text="Войти" />
-    </HBox>
-    <HBox VBox.vgrow="ALWAYS">
-        <TextArea fx:id="msgArea" editable="false" wrapText="true" HBox.hgrow="ALWAYS" />
-        <ListView fx:id="clientsList" maxWidth="150" minWidth="150" prefWidth="150" />
-    </HBox>
-    <HBox fx:id="msgPanel">
-        <TextField fx:id="msgField" onAction="#sendMessage" promptText="Введите сообщение" HBox.hgrow="ALWAYS" />
-        <Button onAction="#sendMessage" text="Send" />
-    </HBox>
+<VBox alignment="center" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="ru.ArtemSmirnov.java2.chat.client.Controller">
+    <VBox fx:id="loginPanel">
+        <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        </padding>
+        <TextField fx:id="usernameField" maxWidth="600.0" minWidth="150.0" onAction="#login" prefWidth="600.0"
+                   promptText="Укажите свой ник">
+            <VBox.margin>
+                <Insets/>
+            </VBox.margin>
+        </TextField>
+        <PasswordField fx:id="passwordField" maxWidth="600.0" minWidth="150.0" onAction="#login" prefWidth="600.0"
+                       promptText="Введите пароль">
+            <VBox.margin>
+                <Insets bottom="5.0" top="5.0"/>
+            </VBox.margin>
+        </PasswordField>
+        <Button alignment="CENTER" contentDisplay="CENTER" maxWidth="600.0" minWidth="150.0" onAction="#login"
+                prefWidth="600.0" text="Войти"/>
+    </VBox>
+    <VBox fx:id="msgPanel">
+        <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        </padding>
+        <HBox VBox.vgrow="ALWAYS">
+            <TextArea fx:id="msgArea" editable="false" wrapText="true" HBox.hgrow="ALWAYS"/>
+            <ListView fx:id="clientsList" maxWidth="150" minWidth="150" prefWidth="150"/>
+        </HBox>
+        <HBox>
+            <TextField fx:id="msgField" onAction="#sendMessage" promptText="Введите сообщение" HBox.hgrow="ALWAYS"/>
+            <Button onAction="#sendMessage" text="Send"/>
+            <VBox.margin>
+                <Insets top="5.0"/>
+            </VBox.margin>
+        </HBox>
+        <Button alignment="CENTER" mnemonicParsing="false" prefHeight="26.0" prefWidth="628.0" text="Logout"
+                VBox.vgrow="ALWAYS" onAction="#logout">
+            <VBox.margin>
+                <Insets top="5.0"/>
+            </VBox.margin>
+        </Button>
+    </VBox>
+
 </VBox>
