@@ -15,7 +15,7 @@ import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
     @FXML
-    TextField msgField, usernameField;
+    TextField msgField, loginField;
 
     @FXML
     PasswordField passwordField;
@@ -36,17 +36,11 @@ public class Controller implements Initializable {
 
     public void setUsername(String username) {
         this.username = username;
-        if (username != null) {
-            loginPanel.setVisible(false);
-            loginPanel.setManaged(false);
-            msgPanel.setVisible(true);
-            msgPanel.setManaged(true);
-        } else {
-            loginPanel.setVisible(true);
-            loginPanel.setManaged(true);
-            msgPanel.setVisible(false);
-            msgPanel.setManaged(false);
-        }
+        boolean usernameIsNull = username == null;
+        loginPanel.setVisible(usernameIsNull);
+        loginPanel.setManaged(usernameIsNull);
+        msgPanel.setVisible(!usernameIsNull);
+        msgPanel.setManaged(!usernameIsNull);
     }
 
     @Override
@@ -55,16 +49,15 @@ public class Controller implements Initializable {
     }
 
     public void login() {
+        if (loginField.getText().isEmpty() || passwordField.getText().isEmpty()) {
+            showErrorAlert("Логин/пароль не могут быть пустыми");
+            return;
+        }
         if (socket == null || socket.isClosed()) {
             connect();
         }
-        if (usernameField.getText().isEmpty() || passwordField.getText().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Логин/пароль не могут быть пустыми", ButtonType.OK);
-            alert.showAndWait();
-            return;
-        }
         try {
-            out.writeUTF("/login " + usernameField.getText() + " " + passwordField.getText());
+            out.writeUTF("/login " + loginField.getText() + " " + passwordField.getText());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -99,15 +92,10 @@ public class Controller implements Initializable {
             });
             t.start();
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Невозможно подключиться к серверу", ButtonType.OK);
-            alert.showAndWait();
+            showErrorAlert("Невозможно подключиться к серверу");
         }
     }
 
-    /**
-     * Метод обработки всех служебных комманд, начинающихся с "/"
-     * @param msg - введенное сообщение
-     */
     public void executeCommand(String msg) {
         String cmd = msg.split("\\s")[0];
         switch (cmd) {
@@ -115,16 +103,8 @@ public class Controller implements Initializable {
                 setUsername(msg.split("\\s", 2)[1]);
                 return;
             case "/login_failed":
-                Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, msg.split("\\s", 2)[1], ButtonType.OK);
-                    alert.showAndWait();
-                });
-                return;
             case "/w_failed":
-                Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, msg.split("\\s", 2)[1], ButtonType.OK);
-                    alert.showAndWait();
-                });
+                Platform.runLater(() -> showErrorAlert(msg.split("\\s", 2)[1]));
                 return;
             case "/clients_list":
                 String[] tokens = msg.split("\\s");
@@ -138,6 +118,8 @@ public class Controller implements Initializable {
                 return;
             case "/exit":
                 return;
+            case "/change_nick_false":
+                Platform.runLater(() -> showErrorAlert(msg.split("\\s", 2)[1]));
         }
     }
 
@@ -147,15 +129,13 @@ public class Controller implements Initializable {
             msgField.clear();
             msgField.requestFocus();
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Невозможно отправить сообщение");
-            alert.showAndWait();
+            showErrorAlert("Невозможно отправить сообщение");
         }
 
     }
 
-    // целесообразно ли делать метод public?
     private void disconnect() {
-        usernameField.clear();
+        loginField.clear();
         passwordField.clear();
         msgArea.clear();
         Platform.runLater(() -> clientsList.getItems().clear());
@@ -167,5 +147,13 @@ public class Controller implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void showErrorAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Simple Chat");
+        alert.setContentText(message);
+        alert.setHeaderText(null);
+        alert.showAndWait();
     }
 }

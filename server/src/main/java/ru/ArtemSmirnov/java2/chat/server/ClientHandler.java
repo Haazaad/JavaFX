@@ -40,7 +40,6 @@ public class ClientHandler {
             try {
                 while (true) {
                     String msg = in.readUTF();
-                    System.out.println(msg);
                     if (msg.startsWith("/")) {
                         executeCommand(msg);
                         continue;
@@ -56,15 +55,14 @@ public class ClientHandler {
 
     }
 
-    /**
-     * Метод обработки всех служебных комманд, начинающихся с "/"
-     * @param message - введенное сообщение
-     */
     private void executeCommand(String message){
-        String[] tokens = message.split("\\s");
+        String[] tokens = message.split("\\s+");
         switch (tokens[0]) {
             case "/login":
-                tokens = message.split("\\s", 3);
+                if (tokens.length != 3) {
+                    sendMessage("/login_failed Введите имя пользователя и пароль");
+                    return;
+                }
                 server.validateUser(this, tokens[1], tokens[2]);
                 return;
             case "/w":
@@ -82,10 +80,19 @@ public class ClientHandler {
                 sendMessage("Текущий ник " + username);
                 return;
             case "/change_nick":
-                tokens = message.split("\\s", 2);
+                if (tokens.length != 2) {
+                    sendMessage("/change_nick_false Введена некорректная команда");
+                    return;
+                }
+                if (server.isUserOnline(tokens[1])) {
+                    sendMessage("/change_nick_false Введенный никнейм занят");
+                    return;
+                }
+                server.getAuthenticationProvider().changeNickname(username, tokens[1]);
                 server.broadcastMessage("Пользователь " + username + " сменил никнейм на " + tokens[1]);
                 setUsername(tokens[1]);
                 server.broadcastClientList();
+                return;
         }
     }
 

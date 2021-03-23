@@ -7,14 +7,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 public class Server {
     private int port;
     private List<ClientHandler> clients;
-    private Users users;
+    private AuthenticationProvider authenticationProvider;
 
     private long countAllMessage;
+
+    public AuthenticationProvider getAuthenticationProvider() {
+        return authenticationProvider;
+    }
 
     public synchronized long getCountAllMessage() {
         return countAllMessage;
@@ -23,7 +26,7 @@ public class Server {
     public Server(int port) {
         this.port = port;
         this.clients = new ArrayList<>();
-        users = new Users();
+        this.authenticationProvider = new InMemoryAuthenticationProvider();
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен на порту " + port);
             while (true) {
@@ -36,7 +39,7 @@ public class Server {
         }
     }
 
-    public synchronized void subscribe(ClientHandler clientHandler){
+    public synchronized void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
         System.out.println("Клиент подключился");
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " присоединился к чату.");
@@ -50,14 +53,14 @@ public class Server {
         broadcastClientList();
     }
 
-    public synchronized void broadcastMessage(String message){
+    public synchronized void broadcastMessage(String message) {
         for (ClientHandler clientHandler : clients) {
             clientHandler.sendMessage(getCurrentTime() + " " + message);
         }
         countAllMessage++;
     }
 
-    public synchronized void sendPrivateMessage(ClientHandler fromUser, String sendToUser, String message){
+    public synchronized void sendPrivateMessage(ClientHandler fromUser, String sendToUser, String message) {
         for (ClientHandler client : clients) {
             if (client.getUsername().equals(sendToUser)) {
                 client.sendMessage(getCurrentTime() + " От: " + fromUser.getUsername() + " Сообщение: " + message);
@@ -79,26 +82,16 @@ public class Server {
         return false;
     }
 
-    /**
-     * Метод валидации введенной пары логин/пароль
-     * @param clientHandler - поток обработчик
-     * @param login - логин пользователя
-     * @param password - введенный пароль пользователя
-     */
     public synchronized void validateUser(ClientHandler clientHandler, String login, String password) {
-        if (users.havingUser(login)) {
-            String username = users.returnUsername(login, password);
-            if (username != null) {
-                if (!isUserOnline(username)) {
-                    clientHandler.setUsername(username);
-                    subscribe(clientHandler);
-                    clientHandler.sendMessage("/login_ok " + username);
-                    return;
-                }
-                clientHandler.sendMessage("/login_failed Текущий никнейм занят");
+        String userNickname = authenticationProvider.getNicknameByLoginAndPassword(login, password);
+        if (userNickname != null) {
+            if (!isUserOnline(userNickname)) {
+                clientHandler.setUsername(userNickname);
+                subscribe(clientHandler);
+                clientHandler.sendMessage("/login_ok " + userNickname);
                 return;
             }
-            clientHandler.sendMessage("/login_failed Введен некорректный пароль");
+            clientHandler.sendMessage("/login_failed Ошибка авторизации - учетная запись уже используется");
             return;
         }
         clientHandler.sendMessage("/login_failed Ошибка авторизации - введена не корректная пара логин/пароль");
@@ -112,12 +105,12 @@ public class Server {
 
     public synchronized void broadcastClientList() {
         StringBuilder builder = new StringBuilder("/clients_list ");
-        for (ClientHandler c: clients) {
+        for (ClientHandler c : clients) {
             builder.append(c.getUsername()).append(" ");
         }
         builder.setLength(builder.length() - 1);
         String clientsList = builder.toString();
-        for (ClientHandler c: clients) {
+        for (ClientHandler c : clients) {
             c.sendMessage(clientsList);
         }
     }

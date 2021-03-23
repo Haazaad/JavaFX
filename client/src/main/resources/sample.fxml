@@ -10,7 +10,7 @@
         <padding>
             <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
         </padding>
-        <TextField fx:id="usernameField" maxWidth="600.0" minWidth="150.0" onAction="#login" prefWidth="600.0"
+        <TextField fx:id="loginField" maxWidth="600.0" minWidth="150.0" onAction="#login" prefWidth="600.0"
                    promptText="Укажите свой ник">
             <VBox.margin>
                 <Insets/>
