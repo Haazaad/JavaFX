@@ -1,4 +1,4 @@
-package ru.ArtemSmirnov.java2.chat.server;
+package ru.ArtemSmirnov.java2.chat.server.authentication;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,22 +30,25 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     @Override
-    public String getNicknameByLoginAndPassword(String login, String password) {
+    public ArrayList<String> getCredentialsByLoginAndPassword(String login, String password) {
+       ArrayList<String> cred = new ArrayList<>();
        for (User u: users) {
            if (u.login.equals(login) && u.password.equals(password)) {
-               return u.nickname;
+               cred.add(String.valueOf(users.indexOf(u)));
+               cred.add(u.nickname);
            }
        }
-       return null;
+       return cred;
     }
 
     @Override
-    public void changeNickname(String oldNickname, String newNickname) {
-        for (User u: users) {
+    public void changeNickname(int userId, String newNickname) {
+        /*for (User u: users) {
             if (u.nickname.equals(oldNickname)) {
                 u.nickname = newNickname;
                 return;
             }
-        }
+        }*/
+        throw new UnsupportedOperationException();
     }
 }

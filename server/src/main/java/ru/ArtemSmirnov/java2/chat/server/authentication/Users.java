@@ -1,4 +1,4 @@
-package ru.ArtemSmirnov.java2.chat.server;
+package ru.ArtemSmirnov.java2.chat.server.authentication;
 
 import java.util.HashMap;
 import java.util.Map;

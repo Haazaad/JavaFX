@@ -1,5 +1,8 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import ru.ArtemSmirnov.java2.chat.server.authentication.AuthenticationProvider;
+import ru.ArtemSmirnov.java2.chat.server.authentication.DbAuthenticationProvider;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -12,21 +15,23 @@ public class Server {
     private int port;
     private List<ClientHandler> clients;
     private AuthenticationProvider authenticationProvider;
+    private DbConnection dbConnection;
 
     private long countAllMessage;
-
-    public AuthenticationProvider getAuthenticationProvider() {
-        return authenticationProvider;
-    }
 
     public synchronized long getCountAllMessage() {
         return countAllMessage;
     }
 
+    public AuthenticationProvider getAuthenticationProvider() {
+        return authenticationProvider;
+    }
+
     public Server(int port) {
         this.port = port;
         this.clients = new ArrayList<>();
-        this.authenticationProvider = new InMemoryAuthenticationProvider();
+        this.dbConnection = new DbConnection();
+        authenticationProvider = new DbAuthenticationProvider(dbConnection.getConnection());
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен на порту " + port);
             while (true) {
@@ -36,6 +41,8 @@ public class Server {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            dbConnection.disconnect();
         }
     }
 
@@ -83,9 +90,13 @@ public class Server {
     }
 
     public synchronized void validateUser(ClientHandler clientHandler, String login, String password) {
-        String userNickname = authenticationProvider.getNicknameByLoginAndPassword(login, password);
-        if (userNickname != null) {
+        //authenticationProvider = new DbAuthenticationProvider(dbConnection.getConnection());
+        List<String> cred = authenticationProvider.getCredentialsByLoginAndPassword(login, password);
+        if (!cred.isEmpty()) {
+            int userId = Integer.parseInt(cred.get(0));
+            String userNickname = cred.get(1);
             if (!isUserOnline(userNickname)) {
+                clientHandler.setUserId(userId);
                 clientHandler.setUsername(userNickname);
                 subscribe(clientHandler);
                 clientHandler.sendMessage("/login_ok " + userNickname);
@@ -96,6 +107,7 @@ public class Server {
         }
         clientHandler.sendMessage("/login_failed Ошибка авторизации - введена не корректная пара логин/пароль");
     }
+
 
     public String getCurrentTime() {
         Date date = new Date();
