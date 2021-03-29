@@ -16,6 +16,7 @@ public class Server {
     private List<ClientHandler> clients;
     private AuthenticationProvider authenticationProvider;
     private DbConnection dbConnection;
+    private DbQueryProvider queryProvider;
 
     private long countAllMessage;
 
@@ -32,8 +33,10 @@ public class Server {
         this.clients = new ArrayList<>();
         this.dbConnection = new DbConnection();
         authenticationProvider = new DbAuthenticationProvider(dbConnection.getConnection());
+        queryProvider = new DbQueryProvider(dbConnection.getConnection());
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен на порту " + port);
+            queryProvider.registerServer();
             while (true) {
                 System.out.println("Ждем нового клиента...");
                 Socket socket = serverSocket.accept();
@@ -42,6 +45,7 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
+            queryProvider.unregisterServer();
             dbConnection.disconnect();
         }
     }
@@ -49,12 +53,14 @@ public class Server {
     public synchronized void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
         System.out.println("Клиент подключился");
+        queryProvider.registerClient(clientHandler);
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " присоединился к чату.");
         broadcastClientList();
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " покинул чат.");
+        queryProvider.unregisterClient(clientHandler);
         clients.remove(clientHandler);
         System.out.println("Клиент отключился");
         broadcastClientList();

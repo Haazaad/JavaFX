@@ -18,6 +18,10 @@ public class ClientHandler {
         return username;
     }
 
+    public int getUserId() {
+        return userId;
+    }
+
     public void riseMessageCount() {
         messageCount++;
     }
