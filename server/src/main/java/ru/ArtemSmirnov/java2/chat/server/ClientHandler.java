@@ -10,6 +10,7 @@ public class ClientHandler {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+    private int userId;
     private String username;
     private long messageCount;
 
@@ -27,6 +28,10 @@ public class ClientHandler {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -88,7 +93,7 @@ public class ClientHandler {
                     sendMessage("/change_nick_false Введенный никнейм занят");
                     return;
                 }
-                server.getAuthenticationProvider().changeNickname(username, tokens[1]);
+                server.getAuthenticationProvider().changeNickname(userId, tokens[1]);
                 server.broadcastMessage("Пользователь " + username + " сменил никнейм на " + tokens[1]);
                 setUsername(tokens[1]);
                 server.broadcastClientList();
