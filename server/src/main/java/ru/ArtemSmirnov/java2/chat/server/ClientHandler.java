@@ -99,6 +99,7 @@ public class ClientHandler {
                 }
                 server.getAuthenticationProvider().changeNickname(userId, tokens[1]);
                 server.broadcastMessage("Пользователь " + username + " сменил никнейм на " + tokens[1]);
+                sendMessage("/change_nick_ok " + tokens[1]);
                 setUsername(tokens[1]);
                 server.broadcastClientList();
                 return;
