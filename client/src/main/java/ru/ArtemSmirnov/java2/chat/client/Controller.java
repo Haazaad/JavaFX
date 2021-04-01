@@ -33,9 +33,11 @@ public class Controller implements Initializable {
     private DataInputStream in;
     private DataOutputStream out;
     private String username;
+    private HistoryFileLogger logger;
 
     public void setUsername(String username) {
         this.username = username;
+        logger = new HistoryFileLogger(username);
         boolean usernameIsNull = username == null;
         loginPanel.setVisible(usernameIsNull);
         loginPanel.setManaged(usernameIsNull);
@@ -81,6 +83,7 @@ public class Controller implements Initializable {
                             executeCommand(msg);
                             continue;
                         }
+                        logger.writeFile(msg + "\n");
                         msgArea.appendText(msg + "\n");
                     }
                 } catch (IOException e) {
@@ -101,9 +104,11 @@ public class Controller implements Initializable {
         switch (cmd) {
             case "/login_ok":
                 setUsername(msg.split("\\s", 2)[1]);
+                msgArea.appendText(logger.readFile());
                 return;
             case "/login_failed":
             case "/w_failed":
+            case "/change_nick_false":
                 Platform.runLater(() -> showErrorAlert(msg.split("\\s", 2)[1]));
                 return;
             case "/clients_list":
@@ -118,8 +123,11 @@ public class Controller implements Initializable {
                 return;
             case "/exit":
                 return;
-            case "/change_nick_false":
-                Platform.runLater(() -> showErrorAlert(msg.split("\\s", 2)[1]));
+            case "/change_nick_ok":
+                String newUsername = msg.split("\\s+", 2)[1];
+                username = newUsername;
+                logger.renameFile(newUsername);
+                return;
         }
     }
 
