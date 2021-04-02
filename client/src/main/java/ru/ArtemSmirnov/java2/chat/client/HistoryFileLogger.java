@@ -4,6 +4,7 @@ import java.io.*;
 
 public class HistoryFileLogger {
     private File logFile;
+    private OutputStreamWriter out;
 
     public HistoryFileLogger(String username) {
         logFile = new File(username + ".log");
@@ -13,6 +14,12 @@ public class HistoryFileLogger {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        // добавил открытие потока чтения файла при инициализации класса
+        try {
+            out = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(logFile, true)), "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -30,7 +37,7 @@ public class HistoryFileLogger {
     }
 
     public void writeFile(String message) {
-        try (OutputStreamWriter out = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(logFile, true)), "UTF-8"))  {
+        try {
             out.write(message);
         } catch (IOException e) {
             e.printStackTrace();
@@ -39,5 +46,16 @@ public class HistoryFileLogger {
 
     public void renameFile(String username) {
         logFile.renameTo(new File(username + ".log"));
+    }
+
+    // метод закрытия потока чтения при дисконнекте
+    public void close() {
+        if (out != null) {
+            try {
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

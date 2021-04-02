@@ -10,6 +10,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private int port;
@@ -28,23 +30,29 @@ public class Server {
         return authenticationProvider;
     }
 
+    // Для прикручивания ExecutorService создаю фиксированный пул потоков
+    // ClientHandler заимплементил от Runnable в нем переопределил run() на ожидание сообщения
+    // Однако несовсем понял, при таком подходе по идее также поток должен висеть и опрашивать состояние входящего стрима
+    // т.е. по идее надо как-то отправить его в ассинхрон на ожидание события и вот тут я зашел в тупик
     public Server(int port) {
         this.port = port;
         this.clients = new ArrayList<>();
         this.dbConnection = new DbConnection();
         authenticationProvider = new DbAuthenticationProvider(dbConnection.getConnection());
         queryProvider = new DbQueryProvider(dbConnection.getConnection());
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Сервер запущен на порту " + port);
             queryProvider.registerServer();
             while (true) {
                 System.out.println("Ждем нового клиента...");
                 Socket socket = serverSocket.accept();
-                new ClientHandler(this, socket);
+                executorService.execute(new ClientHandler(this, socket));
             }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
+            executorService.shutdown();
             queryProvider.unregisterServer();
             dbConnection.disconnect();
         }
@@ -87,16 +95,10 @@ public class Server {
     }
 
     public synchronized boolean isUserOnline(String username) {
-        for (ClientHandler clientHandler : clients) {
-            if (clientHandler.getUsername().equals(username)) {
-                return true;
-            }
-        }
-        return false;
+        return authenticationProvider.isUserOnline(username);
     }
 
     public synchronized void validateUser(ClientHandler clientHandler, String login, String password) {
-        //authenticationProvider = new DbAuthenticationProvider(dbConnection.getConnection());
         List<String> cred = authenticationProvider.getCredentialsByLoginAndPassword(login, password);
         if (!cred.isEmpty()) {
             int userId = Integer.parseInt(cred.get(0));

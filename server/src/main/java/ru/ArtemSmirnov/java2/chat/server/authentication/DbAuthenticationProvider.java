@@ -54,6 +54,24 @@ public class DbAuthenticationProvider implements AuthenticationProvider{
         return credentials;
     }
 
+    public boolean isUserOnline(String username) {
+        String query = String.format("select cs.user_id from credentials c, client_sessions cs\n" +
+                "where c.user_id = cs.user_id\n" +
+                "and cs.end_date is null\n" +
+                "and c.nickname = '%s'", username);
+        try {
+            Statement stmt = connection.createStatement();
+            try (ResultSet rs = stmt.executeQuery(query)) {
+                if (rs.next()) {
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     @Override
     public void changeNickname(int userId, String newNickname) {
         try {

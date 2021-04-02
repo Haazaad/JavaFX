@@ -5,4 +5,5 @@ import java.util.ArrayList;
 public interface AuthenticationProvider {
     ArrayList<String> getCredentialsByLoginAndPassword(String login, String password);
     void changeNickname(int userId, String newNickname);
+    boolean isUserOnline(String username);
 }
