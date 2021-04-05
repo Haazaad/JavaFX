@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
-public class ClientHandler {
+public class ClientHandler implements Runnable{
     private Server server;
     private Socket socket;
     private DataInputStream in;
@@ -38,30 +38,30 @@ public class ClientHandler {
         this.userId = userId;
     }
 
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                String msg = in.readUTF();
+                if (msg.startsWith("/")) {
+                    executeCommand(msg);
+                    continue;
+                }
+                server.broadcastMessage(username + ": " + msg);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            disconnect();
+        }
+    }
+
     public ClientHandler(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
         messageCount = 0;
-
-        new Thread(() -> {
-            try {
-                while (true) {
-                    String msg = in.readUTF();
-                    if (msg.startsWith("/")) {
-                        executeCommand(msg);
-                        continue;
-                    }
-                    server.broadcastMessage(username + ": " + msg);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                disconnect();
-            }
-        }).start();
-
     }
 
     private void executeCommand(String message){
@@ -93,7 +93,7 @@ public class ClientHandler {
                     sendMessage("/change_nick_false Введена некорректная команда");
                     return;
                 }
-                if (server.isUserOnline(tokens[1])) {
+                if (server.getAuthenticationProvider().isUserOnline(tokens[1])) {
                     sendMessage("/change_nick_false Введенный никнейм занят");
                     return;
                 }

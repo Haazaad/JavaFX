@@ -43,12 +43,13 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public void changeNickname(int userId, String newNickname) {
-        /*for (User u: users) {
-            if (u.nickname.equals(oldNickname)) {
-                u.nickname = newNickname;
-                return;
-            }
-        }*/
+        if (userId >= 0 && userId < users.size()) {
+            users.get(userId).nickname = newNickname;
+        }
+    }
+
+    @Override
+    public boolean isUserOnline(String username) {
         throw new UnsupportedOperationException();
     }
 }

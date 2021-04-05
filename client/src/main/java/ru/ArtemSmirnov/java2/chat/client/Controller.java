@@ -147,6 +147,7 @@ public class Controller implements Initializable {
         passwordField.clear();
         msgArea.clear();
         Platform.runLater(() -> clientsList.getItems().clear());
+        logger.close();
         setUsername(null);
         try {
             if (socket != null) {
