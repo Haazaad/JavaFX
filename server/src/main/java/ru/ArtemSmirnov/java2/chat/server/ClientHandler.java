@@ -1,5 +1,8 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,6 +16,8 @@ public class ClientHandler implements Runnable{
     private int userId;
     private String username;
     private long messageCount;
+
+    private static final Logger logger = LogManager.getLogger(ClientHandler.class.getName());
 
     public String getUsername() {
         return username;
@@ -87,6 +92,7 @@ public class ClientHandler implements Runnable{
                 return;
             case "/who_am_i":
                 sendMessage("Текущий ник " + username);
+                logger.debug("/who_am_i Текущий ник " + username);
                 return;
             case "/change_nick":
                 if (tokens.length != 2) {
@@ -94,11 +100,13 @@ public class ClientHandler implements Runnable{
                     return;
                 }
                 if (server.getAuthenticationProvider().isUserOnline(tokens[1])) {
+                    logger.debug("Ошибка смена никнейма для пользователя " + tokens[1]);
                     sendMessage("/change_nick_false Введенный никнейм занят");
                     return;
                 }
                 server.getAuthenticationProvider().changeNickname(userId, tokens[1]);
                 server.broadcastMessage("Пользователь " + username + " сменил никнейм на " + tokens[1]);
+                logger.debug("Пользователь " + username + " сменил никнейм на " + tokens[1]);
                 sendMessage("/change_nick_ok " + tokens[1]);
                 setUsername(tokens[1]);
                 server.broadcastClientList();

@@ -15,7 +15,6 @@ public class HistoryFileLogger {
                 e.printStackTrace();
             }
         }
-        // добавил открытие потока чтения файла при инициализации класса
         try {
             out = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(logFile, true)), "UTF-8");
         } catch (IOException e) {
@@ -48,7 +47,6 @@ public class HistoryFileLogger {
         logFile.renameTo(new File(username + ".log"));
     }
 
-    // метод закрытия потока чтения при дисконнекте
     public void close() {
         if (out != null) {
             try {

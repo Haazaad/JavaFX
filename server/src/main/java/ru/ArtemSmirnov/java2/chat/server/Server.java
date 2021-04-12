@@ -1,5 +1,7 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.ArtemSmirnov.java2.chat.server.authentication.AuthenticationProvider;
 import ru.ArtemSmirnov.java2.chat.server.authentication.DbAuthenticationProvider;
 
@@ -22,6 +24,8 @@ public class Server {
 
     private long countAllMessage;
 
+    private static final Logger logger = LogManager.getLogger(Server.class.getName());
+
     public synchronized long getCountAllMessage() {
         return countAllMessage;
     }
@@ -30,10 +34,6 @@ public class Server {
         return authenticationProvider;
     }
 
-    // Для прикручивания ExecutorService создаю фиксированный пул потоков
-    // ClientHandler заимплементил от Runnable в нем переопределил run() на ожидание сообщения
-    // Однако несовсем понял, при таком подходе по идее также поток должен висеть и опрашивать состояние входящего стрима
-    // т.е. по идее надо как-то отправить его в ассинхрон на ожидание события и вот тут я зашел в тупик
     public Server(int port) {
         this.port = port;
         this.clients = new ArrayList<>();
@@ -42,10 +42,10 @@ public class Server {
         queryProvider = new DbQueryProvider(dbConnection.getConnection());
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Сервер запущен на порту " + port);
+            logger.info("Сервер запущен на порту " + port);
             queryProvider.registerServer();
             while (true) {
-                System.out.println("Ждем нового клиента...");
+                logger.info("Ждем нового клиента...");
                 Socket socket = serverSocket.accept();
                 executorService.execute(new ClientHandler(this, socket));
             }
@@ -60,7 +60,7 @@ public class Server {
 
     public synchronized void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
-        System.out.println("Клиент подключился");
+        logger.info(clientHandler.getUsername() + " подключился к чату.");
         queryProvider.registerClient(clientHandler);
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " присоединился к чату.");
         broadcastClientList();
@@ -68,9 +68,10 @@ public class Server {
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " покинул чат.");
+
         queryProvider.unregisterClient(clientHandler);
         clients.remove(clientHandler);
-        System.out.println("Клиент отключился");
+        logger.info(clientHandler.getUsername() + " отключился от чата.");
         broadcastClientList();
     }
 
@@ -85,12 +86,14 @@ public class Server {
         for (ClientHandler client : clients) {
             if (client.getUsername().equals(sendToUser)) {
                 client.sendMessage(getCurrentTime() + " От: " + fromUser.getUsername() + " Сообщение: " + message);
+                logger.trace("От: " + fromUser.getUsername() + " Сообщение: " + message);
                 fromUser.sendMessage(getCurrentTime() + " Пользователю: " + sendToUser + " Сообщение: " + message);
                 client.riseMessageCount();
                 fromUser.riseMessageCount();
                 return;
             }
         }
+        logger.debug("/w_failed Невозможно отправить сообщение от " + fromUser.getUsername() + " пользователю " + sendToUser + " - пользователь не в сети");
         fromUser.sendMessage("/w_failed Невозможно отправить сообщение пользователю " + sendToUser + " - пользователь не в сети");
     }
 
@@ -108,11 +111,14 @@ public class Server {
                 clientHandler.setUsername(userNickname);
                 subscribe(clientHandler);
                 clientHandler.sendMessage("/login_ok " + userNickname);
+                logger.trace("/login_ok " + userNickname);
                 return;
             }
+            logger.trace("/login_failed Ошибка авторизации - учетная запись " + clientHandler.getUsername() + " уже используется");
             clientHandler.sendMessage("/login_failed Ошибка авторизации - учетная запись уже используется");
             return;
         }
+        logger.trace("/login_failed Ошибка авторизации - введена не корректная пара логин/пароль для " + clientHandler.getUsername());
         clientHandler.sendMessage("/login_failed Ошибка авторизации - введена не корректная пара логин/пароль");
     }
 
