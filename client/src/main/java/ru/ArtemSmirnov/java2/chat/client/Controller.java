@@ -5,15 +5,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
+    private static final Logger logger = LogManager.getLogger(Controller.class.getName());
+
     @FXML
     TextField msgField, loginField;
 
@@ -29,15 +31,12 @@ public class Controller implements Initializable {
     @FXML
     ListView<String> clientsList;
 
-    private Socket socket;
-    private DataInputStream in;
-    private DataOutputStream out;
+    private Network network;
     private String username;
-    private HistoryFileLogger logger;
+    private HistoryFileLogger fileLogger;
 
     public void setUsername(String username) {
         this.username = username;
-        logger = new HistoryFileLogger(username);
         boolean usernameIsNull = username == null;
         loginPanel.setVisible(usernameIsNull);
         loginPanel.setManaged(usernameIsNull);
@@ -48,6 +47,27 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setUsername(null);
+        network = new Network();
+
+        network.setOnCommandReceivedCallback(args -> {
+            String cmd = (String) args[0];
+            executeCommand(cmd);
+        });
+
+        network.setOnMessageReceivedCallback(args -> {
+            String msg = (String) args[0];
+            fileLogger.writeFile(msg + "\n");
+            msgArea.appendText(msg + "\n");
+        });
+
+        network.setOnDisconnectCallback(args -> {
+            loginField.clear();
+            passwordField.clear();
+            msgArea.clear();
+            Platform.runLater(() -> clientsList.getItems().clear());
+            setUsername(null);
+            fileLogger.close();
+        });
     }
 
     public void login() {
@@ -55,47 +75,20 @@ public class Controller implements Initializable {
             showErrorAlert("Логин/пароль не могут быть пустыми");
             return;
         }
-        if (socket == null || socket.isClosed()) {
-            connect();
+        if (!network.isConnected()) {
+            try {
+                network.connect(8189);
+            } catch (IOException e){
+                logger.throwing(Level.ERROR, e);
+                showErrorAlert("Невозможно подключится к серверу на порт " + 8189);
+                return;
+            }
         }
         try {
-            out.writeUTF("/login " + loginField.getText() + " " + passwordField.getText());
+            network.tryToLogin(loginField.getText(), passwordField.getText());
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void logout() {
-        disconnect();
-    }
-
-    public void connect() {
-        try {
-            socket = new Socket("localhost", 8189);
-            in = new DataInputStream(socket.getInputStream());
-            out = new DataOutputStream(socket.getOutputStream());
-
-            Thread t = new Thread(() -> {
-                try {
-                    while (true) {
-                        String msg = in.readUTF();
-                        if (msg.startsWith("/")) {
-                            executeCommand(msg);
-                            continue;
-                        }
-                        logger.writeFile(msg + "\n");
-                        msgArea.appendText(msg + "\n");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    disconnect();
-                }
-
-            });
-            t.start();
-        } catch (IOException e) {
-            showErrorAlert("Невозможно подключиться к серверу");
+            logger.throwing(Level.ERROR, e);
+            showErrorAlert("Невозможно отправить данные пользователя");
         }
     }
 
@@ -104,7 +97,9 @@ public class Controller implements Initializable {
         switch (cmd) {
             case "/login_ok":
                 setUsername(msg.split("\\s", 2)[1]);
-                msgArea.appendText(logger.readFile());
+                fileLogger.init(msg.split("\\s", 2)[1]);
+                msgArea.clear();
+                msgArea.appendText(fileLogger.readFile());
                 return;
             case "/login_failed":
             case "/w_failed":
@@ -114,7 +109,6 @@ public class Controller implements Initializable {
             case "/clients_list":
                 String[] tokens = msg.split("\\s");
                 Platform.runLater(() -> {
-                    System.out.println(Thread.currentThread().getName());
                     clientsList.getItems().clear();
                     for (int i = 1; i < tokens.length; i++) {
                         clientsList.getItems().add(tokens[i]);
@@ -126,36 +120,21 @@ public class Controller implements Initializable {
             case "/change_nick_ok":
                 String newUsername = msg.split("\\s+", 2)[1];
                 username = newUsername;
-                logger.renameFile(newUsername);
+                fileLogger.renameFile(newUsername);
                 return;
         }
     }
 
     public void sendMessage() {
         try {
-            out.writeUTF(msgField.getText());
+            network.sendMessage(msgField.getText());
             msgField.clear();
             msgField.requestFocus();
         } catch (IOException e) {
+            logger.throwing(Level.ERROR, e);
             showErrorAlert("Невозможно отправить сообщение");
         }
 
-    }
-
-    private void disconnect() {
-        loginField.clear();
-        passwordField.clear();
-        msgArea.clear();
-        Platform.runLater(() -> clientsList.getItems().clear());
-        logger.close();
-        setUsername(null);
-        try {
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void showErrorAlert(String message) {
@@ -164,5 +143,9 @@ public class Controller implements Initializable {
         alert.setContentText(message);
         alert.setHeaderText(null);
         alert.showAndWait();
+    }
+
+    public void logout() {
+        network.disconnect();
     }
 }

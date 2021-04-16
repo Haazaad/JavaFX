@@ -6,7 +6,7 @@
     </Properties>
 
     <Appenders>
-        <File name="file" filename="${basePath}/server_log.log" append="true">
+        <File name="file" filename="${basePath}/client_log.log" append="true">
             <PatternLayout pattern="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t] %C (%F:%L) - %m%n"/>
         </File>
 

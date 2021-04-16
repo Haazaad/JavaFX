@@ -1,9 +1,15 @@
 package ru.ArtemSmirnov.java2.chat.server.authentication;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.*;
 import java.util.ArrayList;
 
 public class DbAuthenticationProvider implements AuthenticationProvider{
+    private static final Logger logger = LogManager.getLogger(DbAuthenticationProvider.class.getName());
+
     private Connection connection;
     private PreparedStatement preparedStatement;
 
@@ -28,7 +34,7 @@ public class DbAuthenticationProvider implements AuthenticationProvider{
             try {
                 preparedStatement.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.throwing(Level.ERROR, e);
             }
         }
     }
@@ -47,7 +53,7 @@ public class DbAuthenticationProvider implements AuthenticationProvider{
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -67,7 +73,7 @@ public class DbAuthenticationProvider implements AuthenticationProvider{
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         }
         return false;
     }
@@ -80,7 +86,7 @@ public class DbAuthenticationProvider implements AuthenticationProvider{
             preparedStatement.setInt(2, userId);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }

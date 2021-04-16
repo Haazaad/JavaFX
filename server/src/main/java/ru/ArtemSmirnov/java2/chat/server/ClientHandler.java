@@ -1,5 +1,6 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -9,6 +10,8 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable{
+    private static final Logger logger = LogManager.getLogger(ClientHandler.class.getName());
+
     private Server server;
     private Socket socket;
     private DataInputStream in;
@@ -16,8 +19,6 @@ public class ClientHandler implements Runnable{
     private int userId;
     private String username;
     private long messageCount;
-
-    private static final Logger logger = LogManager.getLogger(ClientHandler.class.getName());
 
     public String getUsername() {
         return username;
@@ -55,7 +56,7 @@ public class ClientHandler implements Runnable{
                 server.broadcastMessage(username + ": " + msg);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -118,7 +119,7 @@ public class ClientHandler implements Runnable{
         try {
             out.writeUTF(message);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         }
     }
 
@@ -128,7 +129,7 @@ public class ClientHandler implements Runnable{
             try {
                 socket.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.throwing(Level.ERROR, e);
             }
         }
     }

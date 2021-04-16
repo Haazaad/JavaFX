@@ -1,5 +1,9 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -7,6 +11,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DbQueryProvider {
+    private static final Logger logger = LogManager.getLogger(DbQueryProvider.class.getName());
+
     private Connection connection;
     private PreparedStatement preparedStatement;
 
@@ -21,7 +27,7 @@ public class DbQueryProvider {
             preparedStatement.setString(2, getCurrentTime());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -34,7 +40,7 @@ public class DbQueryProvider {
             preparedStatement.setString(2, getCurrentTime());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -47,7 +53,7 @@ public class DbQueryProvider {
             preparedStatement.setInt(2, clientHandler.getUserId());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -59,7 +65,7 @@ public class DbQueryProvider {
             preparedStatement.setString(1, getCurrentTime());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             disconnect();
         }
@@ -70,7 +76,7 @@ public class DbQueryProvider {
             try {
                 preparedStatement.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.throwing(Level.ERROR, e);
             }
         }
     }

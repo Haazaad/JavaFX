@@ -1,5 +1,6 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.ArtemSmirnov.java2.chat.server.authentication.AuthenticationProvider;
@@ -50,7 +51,7 @@ public class Server {
                 executorService.execute(new ClientHandler(this, socket));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         } finally {
             executorService.shutdown();
             queryProvider.unregisterServer();
@@ -68,7 +69,6 @@ public class Server {
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
         broadcastMessage("Пользователь " + clientHandler.getUsername() + " покинул чат.");
-
         queryProvider.unregisterClient(clientHandler);
         clients.remove(clientHandler);
         logger.info(clientHandler.getUsername() + " отключился от чата.");

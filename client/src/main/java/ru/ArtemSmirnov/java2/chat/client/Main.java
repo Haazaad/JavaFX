@@ -1,6 +1,7 @@
 package ru.ArtemSmirnov.java2.chat.client;
 
 import javafx.application.Application;
+import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -10,9 +11,12 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource("/sample.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/sample.fxml"));
+        Parent root = loader.load();
+        Controller controller = loader.getController();
         primaryStage.setTitle("Simple Chat");
         primaryStage.setScene(new Scene(root, 600, 400));
+        primaryStage.setOnCloseRequest(event -> controller.logout());
         primaryStage.show();
     }
 

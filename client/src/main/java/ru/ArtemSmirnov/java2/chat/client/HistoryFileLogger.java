@@ -1,36 +1,36 @@
 package ru.ArtemSmirnov.java2.chat.client;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
 
 public class HistoryFileLogger {
+    private static final Logger logger = LogManager.getLogger(HistoryFileLogger.class.getName());
+
+    private String username;
     private File logFile;
     private OutputStreamWriter out;
 
-    public HistoryFileLogger(String username) {
-        logFile = new File(username + ".log");
-        if (!logFile.exists()) {
-            try {
-                logFile.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public void init(String username) {
         try {
-            out = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(logFile, true)), "UTF-8");
+            this.username = username;
+            out = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(getFilename(), true)), "UTF-8");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         }
     }
 
     public String readFile() {
         StringBuilder builder = new StringBuilder();
-        try (InputStreamReader in = new InputStreamReader(new BufferedInputStream(new FileInputStream(logFile)), "UTF-8")) {
+        try (InputStreamReader in = new InputStreamReader(new BufferedInputStream(new FileInputStream(getFilename())), "UTF-8")) {
             int x;
             while ((x = in.read()) != -1) {
                 builder.append((char) x);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         }
         return builder.toString();
     }
@@ -39,12 +39,12 @@ public class HistoryFileLogger {
         try {
             out.write(message);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
         }
     }
 
     public void renameFile(String username) {
-        logFile.renameTo(new File(username + ".log"));
+        logFile.renameTo(new File("/history_" + username + ".txt"));
     }
 
     public void close() {
@@ -52,8 +52,12 @@ public class HistoryFileLogger {
             try {
                 out.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.throwing(Level.ERROR, e);
             }
         }
+    }
+
+    private String getFilename() {
+        return "history/history_" + username + ".txt";
     }
 }

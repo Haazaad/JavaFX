@@ -1,11 +1,17 @@
 package ru.ArtemSmirnov.java2.chat.server;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 
 public class DbConnection {
+    private static final Logger logger = LogManager.getLogger(DbConnection.class.getName());
+
     private Connection connection;
 
     public Connection getConnection() {
@@ -17,7 +23,7 @@ public class DbConnection {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:database.db");
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            logger.throwing(Level.ERROR, e);
             throw new RuntimeException("Невозможно подключиться к БД");
         }
     }
@@ -27,7 +33,7 @@ public class DbConnection {
             try {
                 connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.throwing(Level.ERROR, e);
             }
         }
     }
